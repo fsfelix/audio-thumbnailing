@@ -1,5 +1,7 @@
 import numpy as np
-import matplotlib
+import matplotlib.pyplot as plt
+
+
 
 class ssm:
     def __init__(self, feat):
@@ -18,4 +20,4 @@ class ssm:
         return np.dot(f, g)
 
     def visualize(self):
-        matplotlib.pcolor(self.s)
+        plt.pcolor(self.s)
