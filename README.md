@@ -6,3 +6,6 @@ Repository for my scientific initiation project on audio thumbnailing.
         * jupyter-notebook
         * numpy
         * librosa
+
+## References
+* Automatic Music Summarization via Similarity Analysis - Matthew Cooper, Jonathan Foote
