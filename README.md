@@ -8,4 +8,4 @@ Repository for my scientific initiation project on audio thumbnailing.
         * librosa
 
 ## References
-* Automatic Music Summarization via Similarity Analysis - Matthew Cooper, Jonathan Foote
+* Cooper, Matthew L., and Jonathan Foote. "Automatic Music Summarization via Similarity Analysis." ISMIR. 2002.
