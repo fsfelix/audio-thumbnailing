@@ -9,9 +9,6 @@ class audio_thumb_cf:
     def __init__(self, audio_path, t = 'chroma'):
         self.ssm = ssm(audio_path, t)
 
-    def score(self, m, n):
-        return self.ssm(m, n)
-
     def score_normalized(self, q, r):
         return np.sum(np.sum(self.ssm.s[:,q : r + 1], axis = 0)/(self.ssm.s.shape[0]*(r - q + 1)))
 
@@ -28,4 +25,8 @@ class audio_thumb_cf:
 
     def thumb(self, L):
         q_max = self.score_max(L)
-        print("The best thumbnail for this song with length " + str(L) + " starts at frame: " + str(q_max))
+        print("The best thumbnail for this song with length " + str(round(self.frame_to_time(L), 2)) + " starts at time: " + str(round(self.frame_to_time(q_max), 2)))
+
+    def frame_to_time(self, f):
+        dt = self.ssm.duration/self.ssm.s.shape[0]
+        return dt*f
