@@ -3,11 +3,13 @@
 
 import numpy as np
 import librosa
+import matplotlib.pyplot as plt
 from ssm import ssm
 
 class audio_thumb_muller:
-    def __init__(self, audio_path, t = 'chroma'):
-        self.ssm = ssm(audio_path, t)
+    def __init__(self, audio_path, t = 'chroma', k = 10):
+        self.ssm = ssm(audio_path, k, t)
+
         # S = np.array([[0.1, 1, 0.3, 0.4, 0.5],
         #               [0.3, 0.3, 1, 0.6, 0.5],
         #               [0.6, 0.4, 0.6, 1, 0.3],
@@ -62,6 +64,27 @@ class audio_thumb_muller:
     def calculate_fitness(self, gamma, mi):
         return 2*(gamma * mi/(gamma + mi))
 
+    def print_status(self, M, low, alpha):
+        pct = 100*low/(M - alpha)
+        print("{0:.2f}".format(pct), end = ' ')
+
+
+    def visualize(self, S):
+        plt.figure(figsize=(12, 8))
+        librosa.display.specshow(S, x_axis='frames', y_axis='frames', n_xticks=12)
+        plt.title('SSM')
+        plt.set_cmap('hot_r')
+        plt.colorbar()
+        plt.show()
+
+
+    def display_path(self, path_family, low):
+        S = self.ssm.s.copy()
+        new_cells = [(cell[0], cell[1] + low) for cell in path_family]
+        for cell in new_cells:
+            S[cell] = 5
+        self.visualize(S)
+
     def max_path_family(self, S, alpha):
         [N, M] = S.shape
         D = np.zeros((N, alpha + 1))
@@ -84,28 +107,27 @@ class audio_thumb_muller:
             arg = np.argmax(possible_max)
             path_family = self.calculate_path((0, 0) if arg else (0, alpha), D)
             gamma = self.calculate_coverage(path_family, alpha, N)
-            print("gamma: " + str(gamma))
             mi = self.calculate_score(path_family, score_opt, alpha)
-            print("mi: " + str(mi))
             fitness = self.calculate_fitness(gamma, mi)
-            print("fitness: " + str(fitness))
             fitness_list.append((fitness, low))
-
-            # print("Matriz de similaridade:")
-            # print(Sa)
-            # print("Matriz de custos:")
-            # print(D)
-            #print("Score optimal:")
-            #print(score_opt)
-            #print("Vector scores:")
-            #print(scores_alpha)
+            self.print_status(M, low, alpha)
+            self.display_path(path_family, low)
         return fitness_list
 
-    def thumb(self, alpha):
+    def thumb_alpha(self, alpha):
         fitness_list = self.max_path_family(self.ssm.s, alpha)
+        (max_fit, max_low) = max(fitness_list, key = lambda item:item[0])
+        print("Thumbnail init: " + str(self.frame_to_time(max_low)) + " with: " + str(max_fit) + " of fitness value.")
+
+    def thumb_time(self, time):
+        fitness_list = self.max_path_family(self.ssm.s, self.time_to_frame(time))
         (max_fit, max_low) = max(fitness_list, key = lambda item:item[0])
         print("Thumbnail init: " + str(self.frame_to_time(max_low)) + " with: " + str(max_fit) + " of fitness value.")
 
     def frame_to_time(self, f):
         dt = self.ssm.duration/self.ssm.s.shape[0]
         return dt*f
+
+    def time_to_frame(self, time):
+        df = self.ssm.s.shape[0]
+        return df*time
