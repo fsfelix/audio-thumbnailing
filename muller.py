@@ -10,28 +10,27 @@ class audio_thumb_muller:
     def __init__(self, audio_path, t = 'chroma', k = 10):
         self.ssm = ssm(audio_path, k, t)
 
-        # S = np.array([[0.1, 1, 0.3, 0.4, 0.5],
-        #               [0.3, 0.3, 1, 0.6, 0.5],
-        #               [0.6, 0.4, 0.6, 1, 0.3],
-        #               [0.7, 0.5, 0.5, 0.3, 1],
-        #               [0.1, 1, 0.3, 0.4, 0.5],
-        #               [0.3, 0.3, 1, 0.6, 0.5],
-        #               [0.6, 0.4, 0.6, 1, 0.3],
-        #               [0.7, 0.5, 0.5, 0.3, 1]])
-        # self.max_path_family(S, 4)
-
     def calculate_path(self, pos, D):
         [N, M] = D.shape
         path = []
+        new_path = []
+        path_alpha = []
         path.append(pos)
         (i, j) = pos
         ok = 1
         while(ok):
             tmp = []
             if j == 0 and i < N - 1:
-                path.append((i + 1, j) if D[i + 1, j] > D[i + 1, M - 1] else (i + 1, M - 1))
+                if D[i + 1, j] > D[i + 1, M - 1]:
+                    path.append((i + 1, j))
+                else:
+                    path.append((i + 1, M - 1))
+                    path_alpha.append(path.copy())
+                    path = []
+                #path.append((i + 1, j) if D[i + 1, j] > D[i + 1, M - 1] else (i + 1, M - 1))
                 (i, j) = (i + 1, j) if D[i + 1, j] > D[i + 1, M - 1] else (i + 1, M - 1)
             elif j == 1 and i < N - 1:
+                path.append((i, j))
                 (i, j) = (i, j - 1)
             else:
                 if i + 1 < N and j - 1 >= 0: tmp.append((D[i + 1, j - 1], (i + 1, j - 1)))
@@ -43,14 +42,18 @@ class audio_thumb_muller:
                     path.append(pos[1])
                     i, j = pos[1]
                 else:
+                    xmax = max(path, key = lambda item:item[1])
+                    xmin = min(path, key = lambda item:item[1])
+                    if xmax[1] + xmin[1] == M - 1 or xmax[1] + xmin[1] == M - 2:
+                        path_alpha.append(path.copy())
                     ok = 0
+
             if i == 0 and j == 0:
                 ok = 0
 
-        # print("OLHA O CAMINHO AE RAPAZE")
-        # print(path)
-
-        new_path = [(N - 1 - x[0], x[1] - 1) for x in path]
+        for path in path_alpha:
+            for x in path:
+                new_path.append((N - 1 - x[0], x[1] - 1))
         return new_path
 
     ## Verificar isso aqui!
@@ -111,23 +114,27 @@ class audio_thumb_muller:
             fitness = self.calculate_fitness(gamma, mi)
             fitness_list.append((fitness, low))
             self.print_status(M, low, alpha)
-            self.display_path(path_family, low)
+            #self.display_path(path_family, low)
         return fitness_list
 
     def thumb_alpha(self, alpha):
         fitness_list = self.max_path_family(self.ssm.s, alpha)
         (max_fit, max_low) = max(fitness_list, key = lambda item:item[0])
-        print("Thumbnail init: " + str(self.frame_to_time(max_low)) + " with: " + str(max_fit) + " of fitness value.")
+        #print("Thumbnail init: " + str(self.frame_to_time(max_low)) + " with: " + str(max_fit) + " of fitness value.")
+        print("The best thumbnail for this song with length " + str(round(self.frame_to_time(alpha), 2)) + " starts at time: " + str(round(self.frame_to_time(max_low), 2)))
+
 
     def thumb_time(self, time):
         fitness_list = self.max_path_family(self.ssm.s, self.time_to_frame(time))
         (max_fit, max_low) = max(fitness_list, key = lambda item:item[0])
-        print("Thumbnail init: " + str(self.frame_to_time(max_low)) + " with: " + str(max_fit) + " of fitness value.")
+        #print("Thumbnail init: " + str(self.frame_to_time(max_low)) + " with: " + str(max_fit) + " of fitness value.")
+        print("The best thumbnail for this song with length " + str(round(self.frame_to_time(self.time_to_frame(time)), 2)) + " starts at time: " + str(round(self.frame_to_time(max_low), 2)) + "s")
+
 
     def frame_to_time(self, f):
         dt = self.ssm.duration/self.ssm.s.shape[0]
         return dt*f
 
     def time_to_frame(self, time):
-        df = self.ssm.s.shape[0]
-        return df*time
+        df = self.ssm.s.shape[0]/self.ssm.duration
+        return int(df*time)

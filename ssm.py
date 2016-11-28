@@ -2,13 +2,18 @@ from PIL import Image
 import numpy as np
 import matplotlib.pyplot as plt
 import librosa
+import scipy
 
 class ssm:
-    def __init__(self, audio_path, k = 10, t = 'chroma', normalized = 1):
+    def __init__(self, audio_path, k = 10, t = 'chroma', normalized = 1, treat = 1):
         self.audio, self.sr = self.read_audio(audio_path)
         self.s = self.create_ssm(self.calculate_feat(t), normalized)
         self.reduce_ssm(k)
         self.duration = self.duration()
+
+        if treat == 1:
+            self.path_smooth()
+            self.threshold()
 
     def read_audio(self, audio_path):
         audio, sr = librosa.load(audio_path)
@@ -18,6 +23,10 @@ class ssm:
         print("Calculating features...")
         if t == 'chroma':
             return librosa.feature.chroma_stft(y = self.audio, sr = self.sr, n_fft = 2048)
+        elif t == 'tempo':
+            oenv = librosa.onset.onset_strength(y = self.audio, sr = self.sr)
+            feature = librosa.feature.tempogram(onset_envelope = oenv, sr = self.sr)
+            return feature
 
     def create_ssm(self, feat, normalized):
         print("Features calculated.")
@@ -63,3 +72,8 @@ class ssm:
     def reduce_ssm(self, k):
         self.s = self.s[::k,::k]
 
+    def threshold(self, tau = 0.8):
+        self.s[self.s < tau] = 0
+
+    def path_smooth(self, k = 20):
+        self.s = scipy.ndimage.filters.median_filter(self.s,footprint = np.eye(k))
