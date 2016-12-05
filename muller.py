@@ -3,12 +3,15 @@
 
 import numpy as np
 import librosa
+import IPython.display
 import matplotlib.pyplot as plt
 from ssm import ssm
 
 class audio_thumb_muller:
-    def __init__(self, audio_path, t = 'chroma', k = 10):
-        self.ssm = ssm(audio_path, k, t)
+    def __init__(self, audio_path, t = 'chroma', k = 10, smooth = 1, thresh = 1):
+        self.ssm = ssm(audio_path, k, t, smooth, thresh)
+        self.y, self.sr  = librosa.load(audio_path)
+        self.time  = 0
 
     def calculate_path(self, pos, D):
         [N, M] = D.shape
@@ -69,7 +72,8 @@ class audio_thumb_muller:
 
     def print_status(self, M, low, alpha):
         pct = 100*low/(M - alpha)
-        print("{0:.2f}".format(pct), end = ' ')
+        if int(pct)%10 == 0:
+            print("{0:.2f}".format(pct), end = ' ')
 
 
     def visualize(self, S):
@@ -120,6 +124,7 @@ class audio_thumb_muller:
     def thumb_alpha(self, alpha):
         fitness_list = self.max_path_family(self.ssm.s, alpha)
         (max_fit, max_low) = max(fitness_list, key = lambda item:item[0])
+#        self.thumb_frame = max_low
         #print("Thumbnail init: " + str(self.frame_to_time(max_low)) + " with: " + str(max_fit) + " of fitness value.")
         print("The best thumbnail for this song with length " + str(round(self.frame_to_time(alpha), 2)) + " starts at time: " + str(round(self.frame_to_time(max_low), 2)))
 
@@ -127,6 +132,7 @@ class audio_thumb_muller:
     def thumb_time(self, time):
         fitness_list = self.max_path_family(self.ssm.s, self.time_to_frame(time))
         (max_fit, max_low) = max(fitness_list, key = lambda item:item[0])
+        self.time = self.frame_to_time(max_low)
         #print("Thumbnail init: " + str(self.frame_to_time(max_low)) + " with: " + str(max_fit) + " of fitness value.")
         print("The best thumbnail for this song with length " + str(round(self.frame_to_time(self.time_to_frame(time)), 2)) + " starts at time: " + str(round(self.frame_to_time(max_low), 2)) + "s")
 
@@ -138,3 +144,10 @@ class audio_thumb_muller:
     def time_to_frame(self, time):
         df = self.ssm.s.shape[0]/self.ssm.duration
         return int(df*time)
+
+    def display(self):
+        if self.time == 0:
+            print("run thumb_time() or thumb_alpha()")
+        else:
+            frame = int(len(self.y)*self.time_to_frame(self.time)/self.ssm.duration)
+            IPython.display.Audio(data = self.y[frame:], rate = self.sr)

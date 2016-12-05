@@ -5,14 +5,15 @@ import librosa
 import scipy
 
 class ssm:
-    def __init__(self, audio_path, k = 10, t = 'chroma', normalized = 1, treat = 1):
+    def __init__(self, audio_path, k = 10, t = 'chroma', normalized = 1, smooth = 1, thresh = 1):
         self.audio, self.sr = self.read_audio(audio_path)
         self.s = self.create_ssm(self.calculate_feat(t), normalized)
         self.reduce_ssm(k)
         self.duration = self.duration()
 
-        if treat == 1:
+        if smooth == 1:
             self.path_smooth()
+        if thresh == 1:
             self.threshold()
 
     def read_audio(self, audio_path):
